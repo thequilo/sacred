@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  pytest:
+    strategy:
+      matrix:
+        # These tests run on all os versions
+        env: [
+          {python: '3.8', tox: 'py38'},
+          {python: '3.9', tox: 'py39'},
+          {python: '3.10', tox: 'py310'},
+        ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # These tests only run on ubuntu
+        include:
+          - os: ubuntu-latest
+            env:
+              python: 3.9
+              tox: setup numpy-120 numpy-121 numpy-123 tensorflow-26 tensorflow-27 tensorflow-28 tensorflow-29
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.env.python }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.env.python }}
+    - name: Test pre-commit
+      run: |
+        bash ./tests/check_pre_commit.sh
+    - name: Install tox
+      run: |
+        python -m pip install tox
+    - name: Test with tox against environments ${{ matrix.env.tox }}
+      run: tox -e ${{ matrix.env.tox }}
